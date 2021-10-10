@@ -1,7 +1,1 @@
-batch.txt
-dir
-output.txt
-test
-test.c
-wish
-wish.c
+pwd
