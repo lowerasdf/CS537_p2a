@@ -38,9 +38,9 @@ int parse(char* line, char** args) {
             break;
         }
         if (strlen(token) != 0) {
-            args[i] = token;
-            // args[i] = malloc((strlen(token) + 1) * sizeof(char));
-            // strcpy(args[i], token);
+            // args[i] = token;
+            args[i] = malloc((strlen(token) + 1) * sizeof(char));
+            strcpy(args[i], token);
             // printf("token no.%d: %s\n", i, args[i]);
             i += 1;
         }
@@ -88,14 +88,17 @@ int main(int argc, char *argv[])
     char *line = NULL;
     size_t len = 0;
     char *args[MAX_ARGS_COUNT];
-    int num_args;
+    int num_args = 0;
 
+    // TODO: check malloc return value
     char *path[MAX_PATH_COUNT];
     path[0] = malloc((strlen(DEFAULT_PATH) + 1) * sizeof(char));
     strcpy(path[0], DEFAULT_PATH);
     path[1] = NULL;
 
     int loop_count = 0;
+    char *temp_args[MAX_ARGS_COUNT];
+    int max_count = 0;
 
     for(;;) {
         // int i = 0;
@@ -121,7 +124,27 @@ int main(int argc, char *argv[])
             num_args = parse(line, args);
             args[num_args] = NULL;   
         } else {
+            int count = max_count - loop_count + 1;
+            int loop_count_size = snprintf(NULL, 0, "%d", count);
+            for (int i = 0; i < num_args; i++) {
+                if (strcmp(temp_args[i], "$loop") == 0) {
+                    args[i] = malloc((loop_count_size + 1) * sizeof(char));
+                    sprintf(args[i], "%d", count);
+                } else {
+                    args[i] = malloc(sizeof(temp_args[i]));
+                    // memcpy(args[i], temp_args[i], sizeof(temp_args[i]));
+                    strcpy(args[i], temp_args[i]);
+                }
+            }
+            args[num_args] = NULL;
+
             loop_count -= 1;
+
+            if (loop_count == 0) {
+                for (int i = 0; i < num_args; i++) {
+                    free(temp_args[i]);
+                }
+            }
         }
 
         // for(int i = 0; i < MAX_ARGS_COUNT; i++){
@@ -157,11 +180,19 @@ int main(int argc, char *argv[])
             }
 
             loop_count = atoi(args[1]);
+            max_count = loop_count;
+            // free(args[0]);
+            // free(args[1]);
             for (int i = 2; i < num_args; i++) {
-                args[i-2] = args[i];
+                temp_args[i-2] = malloc(sizeof(args[i]));
+                //memcpy(temp_args[i-2], args[i], sizeof(args[i]));
+                strcpy(temp_args[i-2], args[i]);
+                // args[i-2] = args[i];
             }
-            args[num_args-2] = NULL;
-            num_args -= 2;
+            temp_args[num_args - 2] = NULL;
+            num_args = num_args - 2;
+            // args[num_args-2] = NULL;
+            // num_args -= 2;
         } else {
             int i = 0;
             while (path[i] != NULL) {
@@ -180,11 +211,19 @@ int main(int argc, char *argv[])
             }
         }
 
+        for(int i = 0; i < num_args; i++) {
+            free(args[i]);
+        }
+
         // for(int i = 0; i < num_args; i++) {
         //     free(args[i]);
         // }
         // free(args);
     }
+
+    // for(int i = 0; i < num_args; i++) {
+    //     free(args[i]);
+    // }
 
     int i = 0;
     while(path[i] != NULL) {
