@@ -4,6 +4,7 @@
 #include <string.h>
 #include <sys/wait.h>
 #include <ctype.h>
+#include <fcntl.h>
 
 #define SHELL_PROMPT "wish> "
 #define MAX_LINE_LENGTH 255
@@ -48,14 +49,30 @@ int parse(char* line, char** args) {
     return i;
 }
 
-void execute(char *args[], char *path) {
+void execute(char *args[], char *path, int redirection_idx) {
     int rc = fork();
     if (rc < 0) {
         // TODO handle error
         exit(1);
     } else if (rc == 0) {
-        int err = execv(path, args);
-        printf("error code: %d\n", err);
+        if (redirection_idx > 0) {
+            char* temp[redirection_idx];
+            for (int i = 0; i < redirection_idx; i++) {
+                char curr[strlen(args[i] + 1)];
+                strcpy(curr, args[i]);
+                temp[i] = curr;
+            }
+            temp[redirection_idx] = NULL;
+
+            close(STDOUT_FILENO); 
+	        open(args[redirection_idx + 1], O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
+
+            int err = execv(path, temp);
+            printf("error code: %d\n", err);
+        } else {
+            int err = execv(path, args);
+            printf("error code: %d\n", err);
+        }
         exit(0);
     } else {
         wait(NULL);
@@ -108,6 +125,13 @@ int main(int argc, char *argv[])
         // }
         // printf("\n");
 
+        for(int i = 0; i < num_args; i++) {
+            free(args[i]);
+        }
+
+        int redirection_num = 0;
+        int redirection_idx = 0;
+
         if (loop_count == 0) {
             if (argc == 1) {
                 printPrompt();
@@ -145,6 +169,17 @@ int main(int argc, char *argv[])
                     free(temp_args[i]);
                 }
             }
+        }
+
+        for (int i = 0; i < num_args; i++) {
+            if (strcmp(args[i], ">") == 0) {
+                redirection_num += 1;
+                redirection_idx = i;
+            }
+        }
+        if (redirection_num > 1 || (redirection_num == 1 && num_args - redirection_idx - 1 != 1)) {
+            write(STDERR_FILENO, error_message, strlen(error_message));
+            continue;
         }
 
         // for(int i = 0; i < MAX_ARGS_COUNT; i++){
@@ -205,14 +240,10 @@ int main(int argc, char *argv[])
                 if (fd == -1) {
                     i += 1;
                 } else {
-                    execute(args, str);
+                    execute(args, str, redirection_idx);
                     break;
                 }
             }
-        }
-
-        for(int i = 0; i < num_args; i++) {
-            free(args[i]);
         }
 
         // for(int i = 0; i < num_args; i++) {
@@ -221,9 +252,9 @@ int main(int argc, char *argv[])
         // free(args);
     }
 
-    // for(int i = 0; i < num_args; i++) {
-    //     free(args[i]);
-    // }
+    for(int i = 0; i < num_args; i++) {
+        free(args[i]);
+    }
 
     int i = 0;
     while(path[i] != NULL) {
