@@ -47,13 +47,11 @@ int parse(char* line, char** args, int *redirection_num, int *redirection_idx) {
                     break;
                 }
                 if (strlen(token) != 0) {
-                    // args[i] = token;
                     args[i] = malloc((strlen(token) + 1) * sizeof(char));
                     if (args[i] == NULL) {
                         return -1;
                     }
                     strcpy(args[i], token);
-                    // printf("token no.%d: %s\n", i, args[i]);
                     i += 1;
                 }
             }
@@ -79,14 +77,10 @@ void execute(char *args[], char *path, int redirection_idx, char *error_message)
         if (redirection_idx > 0) {
             char* temp[redirection_idx];
             for (int i = 0; i < redirection_idx; i++) {
-                // char curr[strlen(args[i]) + 1];
-                // strcpy(curr, args[i]);
-                // temp[i] = curr;
                 temp[i] = args[i];
             }
             temp[redirection_idx] = NULL;
 
-            // close(STDOUT_FILENO);
 	        int file = open(args[redirection_idx], O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
             dup2(file, STDOUT_FILENO);
             dup2(file, STDERR_FILENO);
@@ -107,10 +101,6 @@ void execute(char *args[], char *path, int redirection_idx, char *error_message)
         exit(0);
     } else {
         wait(NULL);
-        // parent goes down this path (original process)
-        // int wc = wait(NULL);
-        // printf("hello, I am parent of %d (wc:%d) (pid:%d)\n",
-	    //    rc, wc, (int) getpid());
     }
 }
 
@@ -154,13 +144,6 @@ int main(int argc, char *argv[])
     int redirection_idx = 0;
 
     for(;;) {
-        // int i = 0;
-        // while(path[i] != NULL) {
-        //     printf("PATH: %s, ", path[i]);
-        //     i += 1;
-        // }
-        // printf("\n");
-
         for(int i = 0; i < num_args; i++) {
             free(args[i]);
         }
@@ -170,9 +153,6 @@ int main(int argc, char *argv[])
                 printPrompt();
             }
 
-            // args = malloc(MAX_ARGS_COUNT * sizeof(char*));
-
-            // Parse line
             int temp = getline(&line, &len, f);
             if (temp == -1) {
                 exit(0);   
@@ -202,7 +182,6 @@ int main(int argc, char *argv[])
                         err = 1;
                         break;
                     }
-                    // memcpy(args[i], temp_args[i], sizeof(temp_args[i]));
                     strcpy(args[i], temp_args[i]);
                 }
             }
@@ -222,26 +201,10 @@ int main(int argc, char *argv[])
             }
         }
 
-        // for (int i = 0; i < num_args; i++) {
-        //     if (strcmp(args[i], ">") == 0) {
-        //         redirection_num += 1;
-        //         redirection_idx = i;
-        //     }
-        // }
-        // if (redirection_num > 1 || (redirection_num == 1 && num_args - redirection_idx - 1 != 1)) {
-        //     write(STDERR_FILENO, error_message, strlen(error_message));
-        //     continue;
-        // }
         if (redirection_num > 1 || (redirection_num == 1 && num_args - redirection_idx != 1)) {
             write(STDERR_FILENO, error_message, strlen(error_message));
             continue;
         }
-
-        // printf("REDIRECTION IDX: %d\n", redirection_idx);
-        // for(int i = 0; i < num_args; i++){
-        //     printf("arg #%d: %s, ", i, args[i]);
-        // }
-        // printf("\n");
 
         if (args[0] == NULL) {
             continue;
@@ -293,8 +256,6 @@ int main(int argc, char *argv[])
 
             loop_count = atoi(args[1]);
             max_count = loop_count;
-            // free(args[0]);
-            // free(args[1]);
             int err = 0;
             for (int i = 2; i < num_args; i++) {
                 temp_args[i-2] = malloc(sizeof(args[i]));
@@ -302,9 +263,7 @@ int main(int argc, char *argv[])
                     err = 1;
                     break;
                 }
-                //memcpy(temp_args[i-2], args[i], sizeof(args[i]));
                 strcpy(temp_args[i-2], args[i]);
-                // args[i-2] = args[i];
             }
             if (err) {
                 write(STDERR_FILENO, error_message, strlen(error_message));
@@ -313,8 +272,6 @@ int main(int argc, char *argv[])
             temp_args[num_args - 2] = NULL;
             num_args = num_args - 2;
             redirection_idx = redirection_idx - 2;
-            // args[num_args-2] = NULL;
-            // num_args -= 2;
         } else {
             int i = 0;
             int found = 0;
@@ -338,11 +295,6 @@ int main(int argc, char *argv[])
                 continue;
             }
         }
-
-        // for(int i = 0; i < num_args; i++) {
-        //     free(args[i]);
-        // }
-        // free(args);
     }
 
     for(int i = 0; i < num_args; i++) {
